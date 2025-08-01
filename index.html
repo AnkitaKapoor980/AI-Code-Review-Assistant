@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Review Assistant - Live Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .section-title {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.95rem;
+        }
+
+        select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 0.75rem;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-family: 'Monaco', 'Consolas', monospace;
+            background-color: white;
+        }
+
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        textarea {
+            min-height: 300px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            box-shadow: none;
+            margin: 0.25rem;
+            width: calc(50% - 0.5rem);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            transform: none;
+        }
+
+        .sample-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .results-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .results-title {
+            color: var(--secondary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .results-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom scrollbar */
+        .results-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .results-content::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 3px;
+        }
+
+        .results-content::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 3px;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, var(--secondary), #059669);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .score-number {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .score-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .ai-insights {
+            background: var(--gray-100);
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-insights h4 {
+            color: var(--gray-700);
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-insights p {
+            color: var(--gray-700);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--gray-200);
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            color: var(--gray-700);
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .issues-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .issues-title {
+            color: var(--gray-700);
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-item {
+            background: white;
+            border-left: 4px solid;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .issue-item:hover {
+            transform: translateX(4px);
+        }
+
+        .issue-critical { border-left-color: var(--danger); }
+        .issue-high { border-left-color: var(--danger); }
+        .issue-medium { border-left-color: var(--warning); }
+        .issue-low { border-left-color: var(--success); }
+
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .issue-title {
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.95rem;
+        }
+
+        .severity-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-critical { background: #fee2e2; color: #dc2626; }
+        .severity-high { background: #fee2e2; color: #dc2626; }
+        .severity-medium { background: #fed7aa; color: #ea580c; }
+        .severity-low { background: #dcfce7; color: #16a34a; }
+
+        .issue-message {
+            color: var(--gray-700);
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .issue-suggestion {
+            background: #f0f9ff;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            border-left: 3px solid var(--primary);
+        }
+
+        .improvements-section {
+            background: #fffbeb;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--warning);
+        }
+
+        .improvements-title {
+            color: var(--gray-700);
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .improvements-list {
+            list-style-type: none;
+        }
+
+        .improvements-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #92400e;
+            font-size: 0.9rem;
+        }
+
+        .improvements-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--warning);
+            font-weight: bold;
+        }
+
+        .sample-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f0f9ff;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .sample-title {
+            color: #0369a1;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .loading-text {
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 4px solid var(--gray-200);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gray-700);
+        }
+
+        .empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .empty-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .empty-text {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .success-state {
+            text-align: center;
+            padding: 2rem;
+            background: #f0fdf4;
+            border-radius: 0.75rem;
+            margin-top: 1.5rem;
+            border-left: 4px solid var(--success);
+        }
+
+        .success-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--success);
+        }
+
+        .success-title {
+            color: #166534;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .success-text {
+            color: #16a34a;
+            font-size: 0.95rem;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--danger);
+        }
+
+        .error-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-title {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .error-text {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Code highlighting */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            display: block;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Code Review Assistant</h1>
+            <p>Get instant, AI-powered code analysis with security, performance, and style insights</p>
+            <div class="badge-container">
+                <span class="badge">⚡ 2sec response</span>
+                <span class="badge">🔒 Security focused</span>
+                <span class="badge">🚀 Production ready</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card input-section">
+                <h2 class="section-title">📝 Submit Your Code</h2>
+                <form id="reviewForm">
+                    <div class="form-group">
+                        <label for="language">Programming Language</label>
+                        <select id="language" name="language">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="code">Code to Review</label>
+                        <textarea id="code" name="code" placeholder="Paste your code here..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitBtn">
+                        <span>🔍</span> Analyze Code
+                    </button>
+                </form>
+
+                <div class="sample-section">
+                    <h4 class="sample-title">💡 Try Sample Code:</h4>
+                    <div class="sample-buttons">
+                        <button onclick="loadBadSample()" class="btn btn-secondary">
+                            🔴 Bad Code
+                        </button>
+                        <button onclick="loadGoodSample()" class="btn btn-secondary">
+                            🟢 Good Code
+                        </button>
+                        <button onclick="loadSecuritySample()" class="btn btn-secondary">
+                            🔒 Security Issues
+                        </button>
+                        <button onclick="loadJSSample()" class="btn btn-secondary">
+                            🟨 JavaScript
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card results-section">
+                <h2 class="results-title">📊 Analysis Results</h2>
+                <div class="results-content" id="results">
+                    <div class="empty-state">
+                        <div class="empty-icon">🎯</div>
+                        <h3 class="empty-title">Ready to analyze your code!</h3>
+                        <p class="empty-text">Submit your code on the left to get instant AI-powered insights.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+
+        function loadBadSample() {
+            const sampleCode = `def process_user_data(user_input):
+    # Security issue: using eval
+    result = eval(user_input)
+    
+    # Performance issue: inefficient loop
+    processed_data = []
+    for i in range(len(range(1000))):
+        processed_data = processed_data + str(i)
+    
+    # Style issue: bare except
+    try:
+        risky_op = 10 / 0
+    except:
+        pass
+    
+    # More issues
+    import *
+    global my_var
+    print("Debug info:", result)
+    
+    return result, processed_data`;
+            
+            document.getElementById('code').value = sampleCode;
+            document.getElementById('language').value = 'python';
+        }
+
+        function loadGoodSample() {
+            const sampleCode = `import logging
+from typing import List, Optional
+
+def process_user_data(user_input: str) -> tuple[Optional[str], List[int]]:
+    """
+    Process user input safely and efficiently.
+    
+    Args:
+        user_input: String input to process
+        
+    Returns:
+        Tuple of processed result and data list
+    """
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Safe input validation
+        if not isinstance(user_input, str):
+            raise ValueError("Input must be a string")
+        
+        # Safe processing without eval
+        result = user_input.strip().upper()
+        
+        # Efficient list comprehension
+        processed_data = [i * 2 for i in range(100)]
+        
+        logger.info(f"Processed {len(processed_data)} items")
+        return result, processed_data
+        
+    except ValueError as e:
+        logger.error(f"Invalid input: {e}")
+        return None, []
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return None, []`;
+            
+            document.getElementById('code').value = sampleCode;
+            document.getElementById('language').value = 'python';
+        }
+
+        function loadSecuritySample() {
+            const sampleCode = `import subprocess
+import pickle
+import yaml
+
+def vulnerable_function(user_data, filename):
+    # Multiple security vulnerabilities
+    
+    # Command injection risk
+    subprocess.call(f"echo {user_data}", shell=True)
+    
+    # Dangerous deserialization
+    data = pickle.loads(user_data)
+    
+    # Unsafe YAML loading
+    config = yaml.load(open(filename))
+    
+    # Code execution risk
+    result = eval(user_data)
+    exec(f"print('{user_data}')")
+    
+    return result`;
+            
+            document.getElementById('code').value = sampleCode;
+            document.getElementById('language').value = 'python';
+        }
+
+        function loadJSSample() {
+            const sampleCode = `function processUserInput(userInput) {
+    // Security issues
+    document.getElementById('output').innerHTML = userInput;
+    var result = eval(userInput);
+    
+    // Style and performance issues
+    var data = [];
+    for (var i = 0; i < userInput.length; i++) {
+        if (userInput[i] == 'a') {
+            data.push(i);
+        }
+    }
+    
+    // Loose equality
+    if (result == true) {
+        console.log("Success");
+    }
+    
+    return data;
+}`;
+            
+            document.getElementById('code').value = sampleCode;
+            document.getElementById('language').value = 'javascript';
+        }
+
+        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultsDiv = document.getElementById('results');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span>🔄</span> Analyzing...';
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Analyzing your code...</div>
+                </div>
+            `;
+            
+            try {
+                const formData = new FormData(e.target);
+                const requestData = {
+                    code: formData.get('code'),
+                    language: formData.get('language'),
+                    ai_model: "rule_based"  // Default to rule-based analysis
+                };
+                
+                const response = await fetch(`${API_BASE}/ai-review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                displayResults(result);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">❌</div>
+                        <h3 class="error-title">Analysis Failed</h3>
+                        <p>Make sure the API server is running on localhost:8001</p>
+                        <p class="error-text">Error: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>🔍</span> Analyze Code';
+            }
+        });
+
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Calculate color based on score
+            const scoreColor = result.overall_score >= 90 ? '#10b981' : 
+                             result.overall_score >= 70 ? '#f59e0b' : '#ef4444';
+            
+            // Format metrics safely
+            const metrics = result.code_quality_metrics || {};
+            const linesOfCode = metrics.lines_of_code ?? 'N/A';
+            const complexity = metrics.cyclomatic_complexity ?? 'N/A';
+            const functions = metrics.function_count ?? 'N/A';
+            const comments = metrics.comment_ratio !== undefined ? 
+                           Math.round(metrics.comment_ratio * 100) + '%' : 'N/A';
+            
+            let html = `
+                <div class="score-display" style="background: linear-gradient(135deg, ${scoreColor}, ${scoreColor}dd);">
+                    <div class="score-number">${Math.round(result.overall_score)}</div>
+                    <div class="score-label">Overall Quality Score</div>
+                </div>
+                
+                <div class="ai-insights">
+                    <h4>🤖 AI Insights:</h4>
+                    <p>${result.ai_summary || 'Analysis completed'}</p>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${linesOfCode}</div>
+                        <div class="metric-label">Lines of Code</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${complexity}</div>
+                        <div class="metric-label">Complexity</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${functions}</div>
+                        <div class="metric-label">Functions</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${comments}</div>
+                        <div class="metric-label">Comments</div>
+                    </div>
+                </div>
+            `;
+            
+            // Add issues section if any
+            if (result.issues && result.issues.length > 0) {
+                html += `
+                    <h3 class="issues-title">🔍 Issues Found (${result.issues.length}):</h3>
+                    <div class="issues-container">
+                `;
+                
+                result.issues.forEach(issue => {
+                    html += `
+                        <div class="issue-item issue-${issue.severity || 'medium'}">
+                            <div class="issue-header">
+                                <span class="issue-title">Line ${issue.line || 0} - ${issue.category || 'general'}</span>
+                                <span class="severity-badge severity-${issue.severity || 'medium'}">
+                                    ${issue.severity || 'issue'}
+                                </span>
+                            </div>
+                            <div class="issue-message">${issue.message || 'Issue detected'}</div>
+                            <div class="issue-suggestion">
+                                <strong>💡 Suggestion:</strong> ${issue.ai_suggestion || 'No specific suggestion provided'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`; // Close issues-container
+            } else {
+                html += `
+                    <div class="success-state">
+                        <div class="success-icon">🎉</div>
+                        <h3 class="success-title">Excellent Code Quality!</h3>
+                        <p class="success-text">No issues detected in your code.</p>
+                    </div>
+                `;
+            }
+            
+            // Add improvements section if any
+            if (result.ai_improvements && result.ai_improvements.length > 0) {
+                html += `
+                    <h3 class="improvements-title">🚀 Improvement Suggestions:</h3>
+                    <div class="improvements-section">
+                        <ul class="improvements-list">
+                `;
+                
+                result.ai_improvements.forEach(improvement => {
+                    html += `<li>${improvement}</li>`;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Add refactored code if available
+            if (result.refactored_code) {
+                html += `
+                    <h3 class="issues-title">✨ Refactored Code:</h3>
+                    <div class="code-block">
+                        <code>${result.refactored_code}</code>
+                    </div>
+                `;
+            }
+            
+            resultsDiv.innerHTML = html;
+            
+            // Apply syntax highlighting
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+        }
+
+        // Add typing effect to placeholder
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('code');
+            const originalPlaceholder = textarea.placeholder;
+            let i = 0;
+            let isDeleting = false;
+            const typingText = "Paste your code here for instant AI analysis...";
+            
+            function typeEffect() {
+                const currentText = typingText.substring(0, i);
+                textarea.placeholder = currentText;
+                
+                if (!isDeleting && i < typingText.length) {
+                    i++;
+                    setTimeout(typeEffect, 100);
+                } else if (isDeleting && i > 0) {
+                    i--;
+                    setTimeout(typeEffect, 50);
+                } else if (!isDeleting && i === typingText.length) {
+                    isDeleting = true;
+                    setTimeout(typeEffect, 2000);
+                } else if (isDeleting && i === 0) {
+                    isDeleting = false;
+                    setTimeout(typeEffect, 500);
+                }
+            }
+            
+            // Start typing effect only if textarea is empty and not focused
+            if (!textarea.value && document.activeElement !== textarea) {
+                setTimeout(typeEffect, 1000);
+            }
+            
+            // Stop typing effect when user focuses on textarea
+            textarea.addEventListener('focus', function() {
+                textarea.placeholder = originalPlaceholder;
+            });
+            
+            // Restart effect when blurring if empty
+            textarea.addEventListener('blur', function() {
+                if (!textarea.value) {
+                    i = 0;
+                    isDeleting = false;
+                    setTimeout(typeEffect, 1000);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
